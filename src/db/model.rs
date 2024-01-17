@@ -32,11 +32,16 @@ impl Todo {
     pub fn add_task(&self, conn: &mut PgConnection, name: &str) -> QueryResult<Task> {
         Task::new(conn, self.id, name)
     }
+
+    pub fn is_completed(&self, conn: &mut PgConnection) -> QueryResult<bool> {
+        // Check if all tasks are completed.
+        Ok(self.get_tasks(conn)?.iter().all(|task| task.is_completed))
+    }
 }
 
 impl Display for Todo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:", self.name)?;
+        write!(f, "{}", self.name)?;
 
         Ok(())
     }
@@ -67,11 +72,11 @@ impl Task {
             .get_result(conn)
     }
 
-    pub fn complete(&mut self, conn: &mut PgConnection) -> QueryResult<()> {
-        self.is_completed = true;
+    pub fn completed(&mut self, conn: &mut PgConnection, value: bool) -> QueryResult<()> {
+        self.is_completed = value;
 
         diesel::update(tasks.find(self.id))
-            .set(is_completed.eq(self.is_completed))
+            .set(is_completed.eq(value))
             .execute(conn)?;
 
         Ok(())
@@ -80,7 +85,9 @@ impl Task {
 
 impl Display for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name)
+        let completed = if self.is_completed { "[x]" } else { "[ ]" };
+
+        write!(f, "{completed}: {task}", task = self.name)
     }
 }
 

@@ -7,22 +7,21 @@ mod db;
 fn main() -> Result<()> {
     let mut conn = db::get_connection()?;
 
-    let todos = seed_todos(&mut conn)?;
-
-    todos
+    // Print all todos and their tasks.
+    seed_todos(&mut conn)?
         .iter()
-        .map(|todo| {
-            println!("{todo}");
+        .try_for_each::<_, Result<()>>(|todo| {
+            let tasks = todo.get_tasks(&mut conn)?;
 
-            todo.get_tasks(&mut conn)?
-                .iter()
-                .for_each(|task| println!("- {task}"));
+            println!("{todo}:");
+            for (i, task) in tasks.iter().enumerate() {
+                println!("{i}. {task}", i = i + 1);
+            }
 
             println!();
 
             Ok(())
-        })
-        .collect::<Result<Vec<_>>>()?;
+        })?;
 
     Ok(())
 }
