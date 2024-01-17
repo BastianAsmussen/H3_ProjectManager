@@ -5,6 +5,7 @@ use diesel::{
     Associations, BelongingToDsl, ExpressionMethods, Identifiable, Insertable, PgConnection,
     QueryDsl, QueryResult, Queryable, RunQueryDsl, Selectable, SelectableHelper,
 };
+use std::fmt::Display;
 
 #[derive(Debug, Eq, PartialEq, Queryable, Identifiable, Selectable, Insertable)]
 #[diesel(table_name = crate::db::schema::todos)]
@@ -30,6 +31,14 @@ impl Todo {
 
     pub fn add_task(&self, conn: &mut PgConnection, name: &str) -> QueryResult<Task> {
         Task::new(conn, self.id, name)
+    }
+}
+
+impl Display for Todo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:", self.name)?;
+
+        Ok(())
     }
 }
 
@@ -66,6 +75,12 @@ impl Task {
             .execute(conn)?;
 
         Ok(())
+    }
+}
+
+impl Display for Task {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 

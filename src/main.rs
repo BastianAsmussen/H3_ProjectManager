@@ -7,21 +7,42 @@ mod db;
 fn main() -> Result<()> {
     let mut conn = db::get_connection()?;
 
-    let todo = seed_todo(&mut conn)?;
+    let todos = seed_todos(&mut conn)?;
 
-    println!("{}:", todo.name);
-    todo.get_tasks(&mut conn)?
+    todos
         .iter()
-        .for_each(|task| println!("- {}", task.name));
+        .map(|todo| {
+            println!("{todo}");
+
+            todo.get_tasks(&mut conn)?
+                .iter()
+                .for_each(|task| println!("- {task}"));
+
+            println!();
+
+            Ok(())
+        })
+        .collect::<Result<Vec<_>>>()?;
 
     Ok(())
 }
 
-fn seed_todo(conn: &mut PgConnection) -> Result<Todo> {
+fn seed_todos(conn: &mut PgConnection) -> Result<Vec<Todo>> {
+    let mut todos = Vec::new();
+
     let todo = Todo::new(conn, "Produce Software")?;
     todo.add_task(conn, "Write Code")?;
     todo.add_task(conn, "Compile Source")?;
     todo.add_task(conn, "Run Tests")?;
 
-    Ok(todo)
+    todos.push(todo);
+
+    let todo = Todo::new(conn, "Brew Coffee")?;
+    todo.add_task(conn, "Pour Water")?;
+    todo.add_task(conn, "Pour Coffee")?;
+    todo.add_task(conn, "Turn On")?;
+
+    todos.push(todo);
+
+    Ok(todos)
 }
