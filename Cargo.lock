@@ -61,14 +61,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1a46d1a171d865aa5f83f92695765caa047a9b4cbae2cbf37dbd613a793fd4c"
 
 [[package]]
-name = "orm"
-version = "0.1.0"
-dependencies = [
- "diesel",
- "dotenvy",
-]
-
-[[package]]
 name = "pq-sys"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -84,6 +76,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95fc56cda0b5c3325f5fbbd7ff9fda9e02bb00bb3dac51252d2f1bfa1cb8cc8c"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "project_manager"
+version = "0.1.0"
+dependencies = [
+ "diesel",
+ "dotenvy",
 ]
 
 [[package]]
