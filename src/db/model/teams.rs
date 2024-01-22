@@ -33,6 +33,13 @@ impl Team {
             .select(Self::as_select())
             .first(conn)
     }
+
+    pub fn by_no_tasks(conn: &mut PgConnection) -> QueryResult<Vec<Self>> {
+        teams::table
+            .filter(teams::todo_id.is_null())
+            .select(Self::as_select())
+            .load(conn)
+    }
 }
 
 #[derive(Debug, Insertable)]
