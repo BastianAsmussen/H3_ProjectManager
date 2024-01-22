@@ -1,99 +1,75 @@
-use crate::db::schema::tasks::dsl::tasks;
-use crate::db::schema::tasks::is_completed;
-use crate::db::schema::todos::dsl::todos;
-use diesel::{
-    Associations, BelongingToDsl, ExpressionMethods, Identifiable, Insertable, PgConnection,
-    QueryDsl, QueryResult, Queryable, RunQueryDsl, Selectable, SelectableHelper,
-};
-use std::fmt::Display;
+use diesel::{Identifiable, Insertable, PgConnection, Queryable, QueryResult, RunQueryDsl, Selectable};
+use crate::db::schema::{teams, workers, teams_workers};
 
-#[derive(Debug, Eq, PartialEq, Queryable, Identifiable, Selectable, Insertable)]
-#[diesel(table_name = crate::db::schema::todos)]
-pub struct Todo {
+#[derive(Debug, Eq, PartialEq, Queryable, Selectable, Identifiable)]
+#[diesel(table_name = teams)]
+pub struct Team {
     pub id: i32,
     pub name: String,
 }
 
-impl Todo {
+impl Team {
     pub fn new(conn: &mut PgConnection, name: &str) -> QueryResult<Self> {
-        let new_todo = NewTodo { name };
+        let new_team = NewTeam { name };
 
-        diesel::insert_into(todos)
-            .values(&new_todo)
+        diesel::insert_into(teams::dsl::teams)
+            .values(&new_team)
             .get_result(conn)
-    }
-
-    pub fn get_tasks(&self, conn: &mut PgConnection) -> QueryResult<Vec<Task>> {
-        Task::belonging_to(self)
-            .select(Task::as_select())
-            .load(conn)
-    }
-
-    pub fn add_task(&self, conn: &mut PgConnection, name: &str) -> QueryResult<Task> {
-        Task::new(conn, self.id, name)
-    }
-
-    pub fn is_completed(&self, conn: &mut PgConnection) -> QueryResult<bool> {
-        // Check if all tasks are completed.
-        Ok(self.get_tasks(conn)?.iter().all(|task| task.is_completed))
-    }
-}
-
-impl Display for Todo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name)?;
-
-        Ok(())
     }
 }
 
 #[derive(Debug, Insertable)]
-#[diesel(table_name = crate::db::schema::todos)]
-struct NewTodo<'a> {
+#[diesel(table_name = teams)]
+struct NewTeam<'a> {
     pub name: &'a str,
 }
 
-#[derive(Debug, Eq, PartialEq, Queryable, Identifiable, Selectable, Associations)]
-#[diesel(belongs_to(Todo))]
-#[diesel(table_name = crate::db::schema::tasks)]
-pub struct Task {
+#[derive(Debug, Eq, PartialEq, Queryable, Selectable, Identifiable)]
+#[diesel(table_name = workers)]
+pub struct Worker {
     pub id: i32,
     pub name: String,
-    pub is_completed: bool,
-    pub todo_id: i32,
 }
 
-impl Task {
-    pub fn new(conn: &mut PgConnection, todo_id: i32, name: &str) -> QueryResult<Self> {
-        let new_task = NewTask { todo_id, name };
+impl Worker {
+    pub fn new(conn: &mut PgConnection, name: &str) -> QueryResult<Self> {
+        let new_worker = NewWorker { name };
 
-        diesel::insert_into(crate::db::schema::tasks::table)
-            .values(&new_task)
+        diesel::insert_into(workers::dsl::workers)
+            .values(&new_worker)
             .get_result(conn)
-    }
-
-    pub fn completed(&mut self, conn: &mut PgConnection, value: bool) -> QueryResult<()> {
-        self.is_completed = value;
-
-        diesel::update(tasks.find(self.id))
-            .set(is_completed.eq(value))
-            .execute(conn)?;
-
-        Ok(())
-    }
-}
-
-impl Display for Task {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let completed = if self.is_completed { "[x]" } else { "[ ]" };
-
-        write!(f, "{completed}: {task}", task = self.name)
     }
 }
 
 #[derive(Debug, Insertable)]
-#[diesel(table_name = crate::db::schema::tasks)]
-struct NewTask<'a> {
-    pub todo_id: i32,
+#[diesel(table_name = workers)]
+struct NewWorker<'a> {
     pub name: &'a str,
+}
+
+#[derive(Debug, Eq, PartialEq, Queryable, Selectable, Identifiable)]
+#[diesel(table_name = teams_workers)]
+#[diesel(belongs_to(Team))]
+#[diesel(belongs_to(Worker))]
+#[diesel(primary_key(team_id, worker_id))]
+pub struct TeamWorker {
+    pub team_id: i32,
+    pub worker_id: i32,
+}
+
+impl TeamWorker {
+    pub fn new(conn: &mut PgConnection, team_id: i32, worker_id: i32) -> QueryResult<Self> {
+        let new_team_worker = NewTeamWorker { team_id, worker_id };
+
+        diesel::insert_into(teams_workers::dsl::teams_workers)
+            .values(&new_team_worker)
+            .get_result(conn)
+    }
+}
+
+#[derive(Debug, Insertable)]
+#[diesel(table_name = teams_workers)]
+struct NewTeamWorker {
+    pub team_id: i32,
+    pub worker_id: i32,
 }

@@ -1,47 +1,60 @@
-use crate::db::model::Todo;
 use color_eyre::Result;
 use diesel::PgConnection;
+use crate::db::model::{Team, TeamWorker, Worker};
 
 mod db;
 
 fn main() -> Result<()> {
     let mut conn = db::get_connection()?;
-
-    // Print all todos and their tasks.
-    seed_todos(&mut conn)?
-        .iter()
-        .try_for_each::<_, Result<()>>(|todo| {
-            let tasks = todo.get_tasks(&mut conn)?;
-
-            println!("{todo}:");
-            for (i, task) in tasks.iter().enumerate() {
-                println!("{i}. {task}", i = i + 1);
-            }
-
-            println!();
-
-            Ok(())
-        })?;
+    seed_workers(&mut conn)?;
 
     Ok(())
 }
 
-fn seed_todos(conn: &mut PgConnection) -> Result<Vec<Todo>> {
-    let mut todos = Vec::new();
+pub fn seed_workers(conn: &mut PgConnection) -> Result<()> {
+    // Create the teams.
+    let teams = vec![
+        Team::new(conn, "Frontend")?,
+        Team::new(conn, "Backend")?,
+        Team::new(conn, "Testers")?,
+    ];
 
-    let todo = Todo::new(conn, "Produce Software")?;
-    todo.add_task(conn, "Write Code")?;
-    todo.add_task(conn, "Compile Source")?;
-    todo.add_task(conn, "Run Tests")?;
+    // Create the workers.
+    let frontend_workers = vec![
+        Worker::new(conn, "Steen Secher")?,
+        Worker::new(conn, "Ejvind Møller")?,
+        Worker::new(conn, "Konrad Sommer")?,
+    ];
+    let backend_workers = vec![
+        Worker::new(conn, "Konrad Sommer")?,
+        Worker::new(conn, "Sofus Lotus")?,
+        Worker::new(conn, "Remo Lademann")?,
+    ];
+    let tester_workers = vec![
+        Worker::new(conn, "Ella Fanth")?,
+        Worker::new(conn, "Anne Dam")?,
+        Worker::new(conn, "Steen Secher")?,
+    ];
 
-    todos.push(todo);
+    for team in teams {
+        if team.name == "Frontend" {
+            for worker in &backend_workers {
+                TeamWorker::new(conn, team.id, worker.id)?;
+            }
+        }
 
-    let todo = Todo::new(conn, "Brew Coffee")?;
-    todo.add_task(conn, "Pour Water")?;
-    todo.add_task(conn, "Pour Coffee")?;
-    todo.add_task(conn, "Turn On")?;
+        if team.name == "Backend" {
+            for worker in &frontend_workers {
+                TeamWorker::new(conn, team.id, worker.id)?;
+            }
+        }
 
-    todos.push(todo);
+        if team.name == "Testers" {
+            for worker in &tester_workers {
+                TeamWorker::new(conn, team.id, worker.id)?;
+            }
+        }
+    }
 
-    Ok(todos)
+    Ok(())
 }
