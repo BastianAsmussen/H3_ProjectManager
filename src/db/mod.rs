@@ -1,7 +1,7 @@
 use diesel::{Connection, ConnectionResult, PgConnection};
 
-pub mod model;
 mod schema;
+pub mod model;
 
 #[allow(clippy::expect_used)]
 pub fn get_connection() -> ConnectionResult<PgConnection> {

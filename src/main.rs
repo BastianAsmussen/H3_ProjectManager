@@ -1,60 +1,21 @@
 use color_eyre::Result;
-use diesel::PgConnection;
-use crate::db::model::{Team, TeamWorker, Worker};
+use crate::db::model::tasks::Todo;
+use crate::db::model::teams::{Team, TeamWorker, Worker};
 
 mod db;
 
 fn main() -> Result<()> {
     let mut conn = db::get_connection()?;
-    seed_workers(&mut conn)?;
 
-    Ok(())
-}
+    let todo = Todo::new(&mut conn, "Todo")?;
+    let task = todo.add_task(&mut conn, "Task")?;
 
-pub fn seed_workers(conn: &mut PgConnection) -> Result<()> {
-    // Create the teams.
-    let teams = vec![
-        Team::new(conn, "Frontend")?,
-        Team::new(conn, "Backend")?,
-        Team::new(conn, "Testers")?,
-    ];
+    let team = Team::new(&mut conn, "Team 1", todo.id)?;
+    let worker = Worker::new(&mut conn, "Worker 1", task.id)?;
 
-    // Create the workers.
-    let frontend_workers = vec![
-        Worker::new(conn, "Steen Secher")?,
-        Worker::new(conn, "Ejvind Møller")?,
-        Worker::new(conn, "Konrad Sommer")?,
-    ];
-    let backend_workers = vec![
-        Worker::new(conn, "Konrad Sommer")?,
-        Worker::new(conn, "Sofus Lotus")?,
-        Worker::new(conn, "Remo Lademann")?,
-    ];
-    let tester_workers = vec![
-        Worker::new(conn, "Ella Fanth")?,
-        Worker::new(conn, "Anne Dam")?,
-        Worker::new(conn, "Steen Secher")?,
-    ];
+    let team_worker = TeamWorker::new(&mut conn, team.id, worker.id)?;
 
-    for team in teams {
-        if team.name == "Frontend" {
-            for worker in &backend_workers {
-                TeamWorker::new(conn, team.id, worker.id)?;
-            }
-        }
-
-        if team.name == "Backend" {
-            for worker in &frontend_workers {
-                TeamWorker::new(conn, team.id, worker.id)?;
-            }
-        }
-
-        if team.name == "Testers" {
-            for worker in &tester_workers {
-                TeamWorker::new(conn, team.id, worker.id)?;
-            }
-        }
-    }
+    println!("{team_worker:#?}");
 
     Ok(())
 }
